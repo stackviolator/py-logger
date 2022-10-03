@@ -191,7 +191,8 @@ class Keylogger:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CCSO Keylogger', formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent('''Example:
-        do this later :)
+        Creating a listener: sudo python logger.py -l
+        Creating a client to log: sudo python logger.py
     '''))
     parser.add_argument('-l', '--listen', action='store_true', help='listen')
     parser.add_argument('-p', '--port', type=int, default=9001, help='specified port')
