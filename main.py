@@ -20,5 +20,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     handler = handler.Handler(args)
-    handler.start_logger()
-
+    handler.start()
