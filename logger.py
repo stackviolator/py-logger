@@ -17,6 +17,8 @@ from datetime import datetime
 # Master TODO
 # 1. Implement keyboard interrupt handling
 # 2. Clean up output in log files ( backspaces, tabs, etc )
+# 3. Have the listener close when the client dies (handle the keyboard interrupt with a cleanup function)
+# 4. Have the client close when the listener dies
 
 # Classes for good python developer standards :)!
 class Keylogger:
