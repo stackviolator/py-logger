@@ -1,6 +1,8 @@
 import argparse
 import textwrap
-import logger
+import sys
+sys.path.insert(0, './modules')
+from modules import logger
 
 # Arg parse
 if __name__ == "__main__":
