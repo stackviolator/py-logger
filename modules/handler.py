@@ -7,7 +7,6 @@ class Handler:
         self.module = ""
 
     def start(self):
-
         while True:
             command = str(input(f"{self.module} >> "))
             self.handle_command(command)
@@ -15,6 +14,8 @@ class Handler:
     def handle_command(self, command):
         if command[0:3] == "USE":
             self.module = command[4:]
+        elif command == "help":
+            self.print_help()
         elif self.module == "logger":
             if command == "start":
                 self.start_logger(self.args)
@@ -22,3 +23,16 @@ class Handler:
     def start_logger(self, args):
         kl = logger.Keylogger(args)
         kl.start()
+
+    def print_help(self):
+        help_payload = ""
+        help_payload += """
+    help            - Displays this message
+    USE <module>    - Select the module to use
+
+    Modules
+        logger      - keylogger tools, listener and client
+            start   - Starts the keylogger module
+        """
+
+        print(help_payload)

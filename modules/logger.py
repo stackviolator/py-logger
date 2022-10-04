@@ -16,6 +16,7 @@ from datetime import datetime
 # 1. Implement keyboard interrupt handling
 # 2. Add pretty colors :^)
 # 3. Add ability for listner to send os commands and/ or execute shellcode
+# 4. Move the output to a separate directory
 
 # Classes for good python developer standards :)!
 class Keylogger:
