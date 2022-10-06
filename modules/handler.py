@@ -14,9 +14,14 @@ class Handler:
             command = str(input(f"{self.module} >> "))
             self.handle_command(command)
 
+    # bad code :)
     def handle_command(self, command):
         if command[0:3] == "USE" or command[0:3] == "use":
             self.module = command[4:]
+            return
+
+        if command == "help":
+            self.print_help()
             return
 
         if self.module == "logger":
@@ -24,11 +29,6 @@ class Handler:
                 self.logger = logger.Keylogger(self.args)
             if command == "start" or command == "run":
                 self.logger.start()
-            return
-
-        if command == "help":
-            self.print_help()
-            return
 
         if command == "options":
             if self.module == "":
