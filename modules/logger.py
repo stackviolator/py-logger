@@ -241,7 +241,6 @@ class Keylogger:
     def print_options(self):
         o = options.Options()
         o.print_options(self.args.__dict__)
-        self.args.__dict__["listen"] = True
 
     def update_options(self, option, value):
         self.args.__dict__[option] = value

